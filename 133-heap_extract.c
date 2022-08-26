@@ -1,121 +1,140 @@
 #include "binary_trees.h"
+#include <stdlib.h>
 
-size_t binary_tree_height(const binary_tree_t *tree);
-heap_t *last_node_heap(const heap_t *tree, size_t level);
-void heapify(heap_t *tree);
+/**
+ * tree_height - measures the height of a binary tree
+ * @tree: pointer to the root node of the tree to measure the height
+ *
+ * Return: Height or 0 if tree is NULL
+ */
+size_t tree_height(const heap_t *tree)
+{
+	size_t height_l = 0;
+	size_t height_r = 0;
+
+	if (!tree)
+		return (0);
+
+	if (tree->left)
+		height_l = 1 + tree_height(tree->left);
+
+	if (tree->right)
+		height_r = 1 + tree_height(tree->right);
+
+	if (height_l > height_r)
+		return (height_l);
+	return (height_r);
+}
+/**
+ * tree_size_h - measures the sum of heights of a binary tree
+ * @tree: pointer to the root node of the tree to measure the height
+ *
+ * Return: Height or 0 if tree is NULL
+ */
+size_t tree_size_h(const binary_tree_t *tree)
+{
+	size_t height_l = 0;
+	size_t height_r = 0;
+
+	if (!tree)
+		return (0);
+
+	if (tree->left)
+		height_l = 1 + tree_size_h(tree->left);
+
+	if (tree->right)
+		height_r = 1 + tree_size_h(tree->right);
+
+	return (height_l + height_r);
+}
+
+/**
+ * _preorder - goes through a binary tree using pre-order traversal
+ * @tree: pointer to the root node of the tree to traverse
+ * @node: will be last note in traverse
+ * @height: height of tree
+ *
+ * Return: No Return
+ */
+void _preorder(heap_t *tree, heap_t **node, size_t height)
+{
+	if (!tree)
+		return;
+
+	if (!height)
+		*node = tree;
+	height--;
+
+	_preorder(tree->left, node, height);
+	_preorder(tree->right, node, height);
+}
+
+/**
+ * heapify - heapifies max binary heap
+ * @root: pointer to binary heap
+ */
+void heapify(heap_t *root)
+{
+	int value;
+	heap_t *tmp1, *tmp2;
+
+	if (!root)
+		return;
+
+	tmp1 = root;
+
+	while (1)
+	{
+		if (!tmp1->left)
+			break;
+		if (!tmp1->right)
+			tmp2 = tmp1->left;
+		else
+		{
+			if (tmp1->left->n > tmp1->right->n)
+				tmp2 = tmp1->left;
+			else
+				tmp2 = tmp1->right;
+		}
+		if (tmp1->n > tmp2->n)
+			break;
+		value = tmp1->n;
+		tmp1->n = tmp2->n;
+		tmp2->n = value;
+		tmp1 = tmp2;
+	}
+}
 
 /**
  * heap_extract - extracts the root node from a Max Binary Heap
- *
  * @root: pointer to the heap root
- *
  * Return: value of extracted node
- *         0 if otherwise
  **/
 int heap_extract(heap_t **root)
 {
 	int value;
-	size_t height;
-	heap_t *first, *last;
+	heap_t *heap_r, *node;
 
 	if (!root || !*root)
 		return (0);
-
-	first = *root;
-	value = first->n;
-
-	if (!(first->left || first->right))
+	heap_r = *root;
+	value = heap_r->n;
+	if (!heap_r->left && !heap_r->right)
 	{
 		*root = NULL;
-		free(first);
+		free(heap_r);
 		return (value);
 	}
 
-	/* Swap data between last node and first node and deletes last node */
-	height = binary_tree_height(*root);
-	last = last_node_heap(*root, height);
-	first->n = last->n;
-	if (last->parent->left == last)
-		last->parent->left = NULL;
+	_preorder(heap_r, &node, tree_height(heap_r));
+
+	heap_r->n = node->n;
+	if (node->parent->right)
+		node->parent->right = NULL;
 	else
-		last->parent->right = NULL;
-	free(last);
-
-	heapify(*root);
-
+		node->parent->left = NULL;
+	free(node);
+	heapify(heap_r);
+	*root = heap_r;
 	return (value);
-}
-
-/**
- * heapify - rearranges the Heap Binary Tree.
- *
- * @tree: pointer to the root node of the Heap Binary Tree.
- **/
-void heapify(heap_t *tree)
-{
-	int temp;
-
-	if (!tree)
-		return;
-
-	temp = tree->n;
-
-	if (tree->left && tree->n < tree->left->n &&
-	    (!tree->right || tree->left->n > tree->right->n))
-	{
-		tree->n = tree->left->n;
-		tree->left->n = temp;
-		heapify(tree->left);
-	}
-	if (tree->right && tree->n < tree->right->n &&
-	    tree->left->n < tree->right->n)
-	{
-		tree->n = tree->right->n;
-		tree->right->n = temp;
-		heapify(tree->right);
-	}
-}
-
-/**
- * last_node_heap - Extracts the last node of the binary heap.
- *
- * @tree: The current node to operate..
- * @level: The current height level of the node.
- *
- * Return: The last node of the tree.
- */
-heap_t *last_node_heap(const heap_t *tree, size_t level)
-{
-	heap_t *last = NULL;
-
-	if (tree)
-	{
-		if (level == 0)
-			return ((heap_t *)tree);
-		last = last_node_heap(tree->right, level - 1) ?
-			last_node_heap(tree->right, level - 1) :
-			last_node_heap(tree->left, level - 1);
-		return (last);
-	}
-	return (NULL);
-}
-
-/**
- * binary_tree_height - Measures the height of a binary tree.
- *
- * @tree: The root of the tree to calculate its height.
- *
- * Return: the tree's height, 0 if tree is NULL.
- */
-size_t binary_tree_height(const binary_tree_t *tree)
-{
-	size_t height_left, height_right;
-
-	if (!tree || !(tree->left || tree->right))
-		return (0);
-
-	height_left = binary_tree_height(tree->left);
-	height_right = binary_tree_height(tree->right);
-
-	return (1 + (height_left >= height_right ? height_left : height_right));
 }
